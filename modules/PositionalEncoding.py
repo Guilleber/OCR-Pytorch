@@ -21,7 +21,7 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 
-class PositionalEncoding2D(nn.Module):
+class PositionalEncoding2d(nn.Module):
     def __init__(self, d_model, dropout=0.1, max_height=1000, max_width=1000):
         super().__init__()
         self.dropout = nn.Dropout(dropout)

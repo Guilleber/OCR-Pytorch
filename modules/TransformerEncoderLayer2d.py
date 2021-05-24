@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class TransformerEncoderLayer2D(nn.Module):
+class TransformerEncoderLayer2d(nn.Module):
     def __init__(self, d_model, nhead, d_hidden, dropout=0.1, depthwise=True):
         super().__init__()
 
@@ -16,18 +16,18 @@ class TransformerEncoderLayer2D(nn.Module):
 
         #Locality-aware feedforward layer
         if depthwise:
-            self.feed_forward = nn.Sequential(nn.Conv2D(d_model, d_hidden, 1),
+            self.feed_forward = nn.Sequential(nn.Conv2d(d_model, d_hidden, 1),
                                               nn.ReLU(),
                                               nn.Dropout(dropout),
-                                              nn.Conv2D(d_hidden, d_hidden, 3, padding=1, groups=d_hidden),
+                                              nn.Conv2d(d_hidden, d_hidden, 3, padding=1, groups=d_hidden),
                                               nn.ReLU(),
                                               nn.Dropout(dropout),
-                                              nn.Conv2D(d_hidden, d_model, 1))
+                                              nn.Conv2d(d_hidden, d_model, 1))
         else:
-            self.feed_forward = nn.Sequential(nn.Conv2D(d_model, d_hidden, 3, padding=1),
+            self.feed_forward = nn.Sequential(nn.Conv2d(d_model, d_hidden, 3, padding=1),
                                               nn.ReLU(),
                                               nn.Dropout(dropout),
-                                              nn.Conv2D(d_hidden, d_model, 3, padding=1))
+                                              nn.Conv2d(d_hidden, d_model, 3, padding=1))
 
         self.dropout1 = nn.Dropout(dropout)
         self.dropout2 = nn.Dropout(dropout)
@@ -48,6 +48,7 @@ class TransformerEncoderLayer2D(nn.Module):
 
         #Self attention
         src = src.view(H*W, N, C)
+        src_key_padding_mask = src_key_padding_mask.view(N, H*W)
         attn = self.self_attn(src, src, src, attn_mask=src_mask, key_padding_mask=src_key_padding_mask)[0]
         src = src + self.dropout1(attn)
         src = self.norm1(src)
