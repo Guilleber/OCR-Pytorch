@@ -15,7 +15,7 @@ class SATRNModel(pl.LightningModule):
         self.save_hyperparameters(hparams)
 
         #Shallow CNN
-        self.shallow_conv = nn.Sequential(nn.Conv2d(1, hparams.d_model, 3, padding=1),
+        self.shallow_conv = nn.Sequential(nn.Conv2d(1 if hparams.grayscale else 3, hparams.d_model, 3, padding=1),
                                           nn.ReLU(),
                                           nn.dropout(hparams.dropout),
                                           nn.Conv2d(hparams.d_model, hparams.d_model, 3, padding=1))
@@ -41,10 +41,9 @@ class SATRNModel(pl.LightningModule):
     def run_encoder(self, img, img_padding_mask=None):
         """
         Shape:
-            img: N x H x W
+            img: N x C x H x W
             img_padding_mask: N x H x W
         """
-        img = img.unsqueeze(1) # -> N x 1 x H x W
         img = self.shallow_conv(img)
         if img_padding_mask is not None:
             img_padding_mask = img_padding_mask.unsqueeze(1)
@@ -82,7 +81,7 @@ class SATRNModel(pl.LightningModule):
     def forward(self, img, tgt, img_padding_mask=None, tgt_padding_mask=None):
         """
         Shape:
-            img: N x H x W
+            img: N x C x H x W
             tgt: N x L
             img_padding_mask: N x H x W
             tgt_padding_mask: N x L
@@ -104,10 +103,10 @@ class SATRNModel(pl.LightningModule):
         logits = logits.transpose(0, 1) # -> N x L x V
         return logits
 
-    def generate(self, img, img_padding_mask):
+    def generate(self, img, img_padding_mask, max_length=25):
         """
         Shape:
-            img: N x H x W
+            img: N x C x H x W
             img_padding_mask: N x H x W
         """
         N = img.size(0)
@@ -119,14 +118,16 @@ class SATRNModel(pl.LightningModule):
             termination_check = termination_check.cuda()
             dec_input = dec_input.cuda()
         attn_mask = self.generate_square_subsequent_mask(1)
+        length = 0
 
-        while torch.sum(termination_check) != termination_check.size(0):
+        while torch.sum(termination_check) != termination_check.size(0) and length < max_length:
             logits = run_decoder(memory, dec_input, attn_mask, memory_padding_mask, None)
             pred = logits.argmax(dim=2)
 
             termination_check = torch.max(termination_check, pred[-1, :] == self.hparams.end_token_idx)
             dec_input = torch.cat([self.hparams.go_token_idx * torch.ones(1, N).type_as(dec_input), pred], dim=0)
             attn_mask = self.generate_square_subsequent_mask(dec_input.size(0))
+            length += 1
         return pred.transpose(0, 1)
 
     def configure_optimizers(self):
