@@ -1,7 +1,7 @@
 import pytorch_lightning as pl
 
 import torch
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, ConcatDataset
 
 import jsonlines
 from PIL import Image
@@ -26,7 +26,7 @@ class Tokenizer:
         max_len = max([len(seq) for seq in ids])
         bs = len(ids)
         padded_ids = self.end_token_idx * np.ones((bs, max_len), dtype=np.int8)
-        mask = (padded_ids == padded_ids)
+        mask = np.ones((bs, max_len), dtype=bool)
         for i in range(bs):
             for j in range(len(ids[i])):
                 padded_ids[i, j] = ids[i][j]
@@ -40,9 +40,9 @@ class Tokenizer:
 
 
 class CharTokenizer(Tokenizer):
-    def __init__(self, hparams):
+    def __init__(self):
        self.vocab = ["GO", "END"] + list(open("./ressources/charset.txt", 'r').read())
-       self.token_to_id = {token: i for i, token in enumerate(self.vocab)}
+       self.token_to_idx = {token: i for i, token in enumerate(self.vocab)}
        self.go_token_idx = self.token_to_idx["GO"]
        self.end_token_idx = self.token_to_idx["END"]
 
@@ -64,22 +64,22 @@ def pad_imgs(imgs):
     max_h = max([s[0] for s in shapes])
     max_w = max([s[1] for s in shapes])
     padded_imgs = np.zeros((bs, channels, max_h, max_w), dtype=np.float64)
-    mask = (padded_imgs == padded_imgs)
+    mask = np.ones((bs, max_h, max_w), dtype=bool)
     for n in range(bs):
-        for h in range(shapes[bs][0]):
-            for w in range(shapes[bs][1]):
+        for h in range(shapes[n][0]):
+            for w in range(shapes[n][1]):
+                mask[n, h, w] = False
                 for c in range(channels):
                     padded_imgs[n, c, h, w] = imgs[n][h, w, c]
-                    mask[n, c, h, w] = False
     return padded_imgs, mask
 
 
 class OCRDataModule(pl.LightningDataModule):
-    def __init__(self, hparams, folder_path, tokenizer):
+    def __init__(self, hparams, folder_paths, tokenizer):
         super().__init__()
         self.hparams = hparams
         self.tokenizer = tokenizer
-        self.folder_path = folder_path
+        self.folder_paths = folder_paths
 
     def collate_fn(self, batch):
         imgs = [el['raw_img'] for el in batch]
@@ -88,18 +88,21 @@ class OCRDataModule(pl.LightningDataModule):
         imgs, img_mask = pad_imgs(imgs)
         tgts, tgt_mask = self.tokenizer.encode(tgts)
 
-        return {'img': torch.from_numpy(imgs),
+        return {'img': torch.from_numpy(imgs).float(),
                 'img_padding_mask': torch.from_numpy(img_mask),
-                'tgt': torch.from_numpy(tgts),
+                'tgt': torch.from_numpy(tgts).int(),
                 'tgt_padding_mask': torch.from_numpy(tgt_mask)}
 
     def setup(self, stage=None):
         if stage in (None, 'fit'):
-            self.train_dataset = OCRDataset(self.folder_path + 'train.jsonl', self.hparams)
-            self.val_dataset = OCRDataset(self.folder_path + 'val.jsonl', self.hparams, is_train=False)
+            train_datasets = [OCRDataset(path + 'train.jsonl', self.hparams) for path in self.folder_paths]
+            val_datasets = [OCRDataset(path + 'val.jsonl', self.hparams, is_train=False) for path in self.folder_paths]
+            self.train_dataset = ConcatDataset(train_datasets)
+            self.val_dataset = ConcatDataset(val_datasets)
 
         if stage in (None, 'test'):
-            self.test_dataset = OCRDataset(self.folder_path + 'test.jsonl', self.hparams, is_train=False)
+            test_datasets = [OCRDataset(path + 'test.jsonl', self.hparams, is_train=False) for path in self.folder_paths]
+            self.test_dataset = ConcatDataset(test_datasets)
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.hparams.bs, shuffle=True, collate_fn=self.collate_fn)
