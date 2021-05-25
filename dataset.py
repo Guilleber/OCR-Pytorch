@@ -9,6 +9,7 @@ import numpy as np
 
 class OCRDataset(Dataset):
     def __init__(self, path, hparams, is_train=True):
+        super().__init__()
         self.hparams = hparams
         self.data = list(jsonlines.open(path, 'r'))
         self.folder_path = '/'.join(path.split('/')[:-1]) + '/'
@@ -44,4 +45,6 @@ class OCRDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, index):
-        return self.load_and_transform(self.folder_path + self.data[index]['img'], crop=self.data[index]['box']), self.data[index]['tag']
+        raw_img = self.load_and_transform(self.folder_path + self.data[index]['img'], crop=self.data[index]['box'])
+        raw_label = self.data[index]['tag']
+        return {'raw_img': raw_img, 'raw_label': raw_label}

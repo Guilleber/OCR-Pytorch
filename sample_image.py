@@ -14,9 +14,9 @@ hparams = {'grayscale': True,
 dataset = OCRDataset(sys.argv[1], Namespace(**hparams), is_train=False)
 
 sample = dataset[random.randint(0, len(dataset)-1)]
-print(sample[1])
+print(sample['raw_label'])
 
-img = sample[0]
+img = sample['raw_image']
 h, w, c = np.shape(img)
 
 if hparams['grayscale']:
