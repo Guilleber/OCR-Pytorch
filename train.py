@@ -16,8 +16,9 @@ if __name__ == '__main__':
     perser.add_argument('--exp_name', type=str, default=None)
     parser.add_argument('--load_weights_from', type=str, default=None)
     
-    parser.add_argument('--bs', type=int, help="mini-batch size", default=4)
+    parser.add_argument('--bs', type=int, help="mini-batch size", default=256)
     parser.add_argument('--gpus', type=int, default=-1)
+    parser.add_argument('--epochs', type=int, default=4)
     parser.add_argument('-h', '--height', type=int, default=32)
     parser.add_argument('-w', '--width', type=int, default=100)
 
@@ -62,5 +63,6 @@ if __name__ == '__main__':
     trainer = pl.Trainer(gpus=args.gpus,
                          accelerator='dp',
                          checkpoint_callback=args.save_best_model,
-                         callbacks=callbacks)
+                         callbacks=callbacks,
+                         gradient_clip_val=2.)
     trainer.fit(model, datamodule)
