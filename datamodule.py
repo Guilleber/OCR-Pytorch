@@ -7,6 +7,7 @@ import jsonlines
 from PIL import Image
 import random
 import numpy as np
+import os
 
 from dataset import OCRDataset
 
@@ -45,6 +46,7 @@ class CharTokenizer(Tokenizer):
        self.token_to_idx = {token: i for i, token in enumerate(self.vocab)}
        self.go_token_idx = self.token_to_idx["GO"]
        self.end_token_idx = self.token_to_idx["END"]
+       self.vocab_size = len(self.vocab)
 
     def tokenize(self, sentences):
         return [list(seq) for seq in sentences]
@@ -80,6 +82,7 @@ class OCRDataModule(pl.LightningDataModule):
         self.hparams = hparams
         self.tokenizer = tokenizer
         self.folder_paths = folder_paths
+        self.num_workers = 4
 
     def collate_fn(self, batch):
         imgs = [el['raw_img'] for el in batch]
@@ -90,7 +93,7 @@ class OCRDataModule(pl.LightningDataModule):
 
         return {'img': torch.from_numpy(imgs).float(),
                 'img_padding_mask': torch.from_numpy(img_mask),
-                'tgt': torch.from_numpy(tgts).int(),
+                'tgt': torch.from_numpy(tgts).long(),
                 'tgt_padding_mask': torch.from_numpy(tgt_mask)}
 
     def setup(self, stage=None):
@@ -105,10 +108,10 @@ class OCRDataModule(pl.LightningDataModule):
             self.test_dataset = ConcatDataset(test_datasets)
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.hparams.bs, shuffle=True, collate_fn=self.collate_fn)
+        return DataLoader(self.train_dataset, batch_size=self.hparams.bs, shuffle=True, collate_fn=self.collate_fn, num_workers=self.num_workers)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.hparams.bs, collate_fn=self.collate_fn)
+        return DataLoader(self.val_dataset, batch_size=self.hparams.bs, collate_fn=self.collate_fn, num_workers=self.num_workers)
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.hparams.bs, collate_fn=self.collate_fn)
+        return DataLoader(self.test_dataset, batch_size=self.hparams.bs, collate_fn=self.collate_fn, num_workers=self.num_workers)

@@ -16,9 +16,11 @@ class SATRNModel(pl.LightningModule):
 
         #Shallow CNN
         self.shallow_conv = nn.Sequential(nn.Conv2d(1 if hparams.grayscale else 3, hparams.d_model, 3, padding=1),
+                                          nn.MaxPool2d(kernel_size=2, stride=2),
                                           nn.ReLU(),
-                                          nn.dropout(hparams.dropout),
-                                          nn.Conv2d(hparams.d_model, hparams.d_model, 3, padding=1))
+                                          nn.Dropout(hparams.dropout),
+                                          nn.Conv2d(hparams.d_model, hparams.d_model, 3, padding=1),
+                                          nn.MaxPool2d(kernel_size=2, stride=2))
 
         #Encoder
         self.encoder_pe = PositionalEncoding2d(hparams.d_model, hparams.dropout)
@@ -27,14 +29,14 @@ class SATRNModel(pl.LightningModule):
 
         #Decoder
         self.decoder_emb = nn.Embedding(hparams.vocab_size, hparams.d_model)
-        self.decoder_pe = PostionalEncoding(hparams.d_model, hparams.dropout)
-        decoder_layers = TransformerDecoderLayer(hparams.d_model, hparams.nhead, hparams.d_hidden, dropout=hparams.dropout)
+        self.decoder_pe = PositionalEncoding(hparams.d_model, hparams.dropout)
+        decoder_layers = nn.TransformerDecoderLayer(hparams.d_model, hparams.nhead, hparams.d_hidden, dropout=hparams.dropout)
         self.decoder = nn.TransformerDecoder(decoder_layers, hparams.nlayers_decoder)
         self.lin_out = nn.Linear(hparams.d_model, hparams.vocab_size)
         return
 
     def generate_square_subsequent_mask(self, L: int):
-        mask = (torch.triu(torch.ones(L, L)) == 1)
+        mask = (torch.triu(torch.ones(L, L)) == 1).transpose(0, 1)
         mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
         return mask
 
@@ -46,9 +48,7 @@ class SATRNModel(pl.LightningModule):
         """
         img = self.shallow_conv(img)
         if img_padding_mask is not None:
-            img_padding_mask = img_padding_mask.unsqueeze(1)
-            img_padding_mask = F.max_pool2d(img_padding_mask, stride=4)
-            img_padding_mask = img_padding_mask.squeeze(1)
+            img_padding_mask = img_padding_mask[:, 0::4, 0::4]
 
         img = img.permute(2, 3, 0, 1) # -> H x W x N x C
         img = self.encoder_pe(img)
@@ -56,9 +56,9 @@ class SATRNModel(pl.LightningModule):
         
         (H, W, N, _) = img.size()
 
-        img = img.view(H*W, N, self.hparams.d_model)
+        img = img.reshape(H*W, N, self.hparams.d_model)
         if img_padding_mask is not None:
-            img_padding_mask = img_padding_mask.view(N, H*W)
+            img_padding_mask = img_padding_mask.reshape(N, H*W)
 
         return img, img_padding_mask
 
@@ -74,7 +74,8 @@ class SATRNModel(pl.LightningModule):
 
         dec_input = self.decoder_emb(dec_input) # -> L x N x C
         dec_input = self.decoder_pe(dec_input)
-        logits = self.decoder(dec_input, img, tgt_mask=attn_mask, memory_key_padding_mask=img_padding_mask, tgt_key_padding_mask=dec_input_padding_mask) # -> L x N x C
+        logits = self.decoder(dec_input, memory, tgt_mask=attn_mask, memory_key_padding_mask=memory_padding_mask, tgt_key_padding_mask=dec_input_padding_mask) # -> L x N x C
+        
         logits = self.lin_out(logits)
         return logits
 
@@ -96,9 +97,9 @@ class SATRNModel(pl.LightningModule):
             dec_input_padding_mask = torch.cat([tgt_padding_mask[0:1, :], tgt_padding_mask[:-1, :]], dim=0)
         else:
             dec_input_padding_mask = None
-        attn_mask = self.generate_square_subsequent_mask(L) # -> L x L
+        attn_mask = self.generate_square_subsequent_mask(L).to(img.device) # -> L x L
 
-        logits = run_decoder(memory, dec_input, attn_mask, memory_padding_mask, dec_input_padding_mask)
+        logits = self.run_decoder(memory, dec_input, attn_mask, memory_padding_mask, dec_input_padding_mask)
 
         logits = logits.transpose(0, 1) # -> N x L x V
         return logits
@@ -135,7 +136,7 @@ class SATRNModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         logits = self(**batch)
-        logits = logits.view(-1, logits.size(2))
+        logits = logits.reshape(-1, logits.size(2))
         tgt = batch['tgt'].view(-1)
 
         loss = F.cross_entropy(logits, tgt)
@@ -148,15 +149,15 @@ class SATRNModel(pl.LightningModule):
         return {'loss': loss, 'acc': acc, 'nb_ex': nb_ex}
 
     def training_epoch_end(self, outputs):
-        acc = torch.sum([out['acc'] for out in outputs])
-        nb_ex = torch.sum([out['nb_ex'] for nb_ex in outputs])
+        acc = sum([out['acc'] for out in outputs])
+        nb_ex = sum([out['nb_ex'] for out in outputs])
         acc = acc/nb_ex
         self.log('acc', acc)
 
     def validation_step(self, batch, batch_idx):
         with torch.no_grad():
             logits = self(**batch)
-            logits = logits.view(-1, logits.size(2))
+            logits = logits.reshape(-1, logits.size(2))
             tgt = batch['tgt'].view(-1)
 
             loss = F.cross_entropy(logits, tgt)
@@ -169,7 +170,7 @@ class SATRNModel(pl.LightningModule):
         return {'loss': loss, 'acc': acc, 'nb_ex': nb_ex}
 
     def validation_epoch_end(self, outputs):
-        acc = torch.sum([out['acc'] for out in outputs])
-        nb_ex = torch.sum([out['nb_ex'] for nb_ex in outputs])
+        acc = sum([out['acc'] for out in outputs])
+        nb_ex = sum([out['nb_ex'] for out in outputs])
         acc = acc/nb_ex
         self.log('val_acc', acc)

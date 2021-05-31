@@ -13,14 +13,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--model_type', type=str, help="Model type: must match one in parameters.py")
     parser.add_argument('-d', '--datasets', type=str, help="Datasets to use for training. Must match one in parameters.py")
-    perser.add_argument('--exp_name', type=str, default=None)
+    parser.add_argument('--exp_name', type=str, default='exp')
     parser.add_argument('--load_weights_from', type=str, default=None)
     
-    parser.add_argument('--bs', type=int, help="mini-batch size", default=256)
+    parser.add_argument('--bs', type=int, help="mini-batch size", default=32)
     parser.add_argument('--gpus', type=int, default=-1)
     parser.add_argument('--epochs', type=int, default=4)
-    parser.add_argument('-h', '--height', type=int, default=32)
-    parser.add_argument('-w', '--width', type=int, default=100)
+    parser.add_argument('--height', type=int, default=32)
+    parser.add_argument('--width', type=int, default=100)
 
     parser.add_argument('--lr', type=float, help="learning rate", default=3e-4)
 
@@ -41,20 +41,21 @@ if __name__ == '__main__':
     model = SATRNModel(args)
 
     # reproducibility
-    pl.seed_everything(42, workers=True)
+    pl.seed_everything(42)
 
     # saves best model
     callbacks = []
-    checkpoint_callback = pl.ModelCheckpoint(monitor='val_acc',
+    if args.save_best_model:
+        checkpoint_callback = pl.callbacks.ModelCheckpoint(monitor='val_acc',
                                              dirpath='./saved_models/',
                                              filename=args.exp_name + '-{epoch:02d}-{val_acc:2.2f}',
                                              save_top_k=1,
                                              verbose=True,
                                              mode='max')
-    callbacks.append(checkpoint_callback)
+        callbacks.append(checkpoint_callback)
 
     # early stopping
-    early_stopping_callback = pl.EarlyStopping(monitor='val_acc',
+    early_stopping_callback = pl.callbacks.EarlyStopping(monitor='val_acc',
                                                min_delta=0.0,
                                                patience=2,
                                                mode='max')
@@ -64,5 +65,6 @@ if __name__ == '__main__':
                          accelerator='dp',
                          checkpoint_callback=args.save_best_model,
                          callbacks=callbacks,
-                         gradient_clip_val=2.)
+                         gradient_clip_val=2.,
+                         max_epochs=args.epochs)
     trainer.fit(model, datamodule)

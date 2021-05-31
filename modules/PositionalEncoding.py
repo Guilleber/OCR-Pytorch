@@ -2,6 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import math
+
+
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model, dropout=0.1, max_len=100):
         super().__init__()
@@ -16,7 +19,7 @@ class PositionalEncoding(nn.Module):
         pe = pe.unsqueeze(0).transpose(0, 1)
         self.register_buffer('pe', pe)
 
-    def forward(self, x)
+    def forward(self, x):
         x = x + self.pe[:x.size(0), :, :]
         return self.dropout(x)
 
