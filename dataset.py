@@ -2,9 +2,11 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 
 import jsonlines
-from PIL import Image
+from PIL import Image, ImageFile
 import random
 import numpy as np
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 class OCRDataset(Dataset):
@@ -45,6 +47,9 @@ class OCRDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, index):
-        raw_img = self.load_and_transform(self.folder_path + self.data[index]['img'], crop=self.data[index]['box'])
-        raw_label = self.data[index]['tag']
-        return {'raw_img': raw_img, 'raw_label': raw_label}
+        try:
+            raw_img = self.load_and_transform(self.folder_path + self.data[index]['img'], crop=self.data[index]['box'])
+            raw_label = self.data[index]['tag']
+            return {'raw_img': raw_img, 'raw_label': raw_label}
+        except:
+            return None

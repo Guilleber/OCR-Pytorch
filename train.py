@@ -27,6 +27,7 @@ if __name__ == '__main__':
     parser.add_argument('--grayscale', help="transform images to grayscale", action='store_true')
     parser.add_argument('--resize', help="resize images to [--width] x [--height]", action='store_true')
     parser.add_argument('--save_best_model', action='store_true')
+    parser.add_argument('--run_test', action='store_true')
 
     args = parser.parse_args()
 
@@ -38,7 +39,10 @@ if __name__ == '__main__':
     args.end_token_idx = tokenizer.end_token_idx
 
     datamodule = OCRDataModule(args, parameters.datasets[args.datasets], tokenizer)
-    model = SATRNModel(args)
+    if args.load_weights_from is None:
+        model = SATRNModel(args)
+    else:
+        model = SATRNModel.load_from_checkpoint(args.load_weights_from)
 
     # reproducibility
     pl.seed_everything(42)
@@ -62,9 +66,15 @@ if __name__ == '__main__':
     callbacks.append(early_stopping_callback)
 
     trainer = pl.Trainer(gpus=args.gpus,
-                         accelerator='dp',
+                         accelerator='ddp',
                          checkpoint_callback=args.save_best_model,
                          callbacks=callbacks,
                          gradient_clip_val=2.,
                          max_epochs=args.epochs)
-    trainer.fit(model, datamodule)
+
+    if args.run_test:
+        datamodule.setup(stage='test')
+        model.set_tokenizer(tokenizer)
+        trainer.test(model, datamodule.test_dataloader())
+    else:
+        trainer.fit(model, datamodule)

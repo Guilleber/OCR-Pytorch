@@ -85,8 +85,8 @@ class OCRDataModule(pl.LightningDataModule):
         self.num_workers = 4
 
     def collate_fn(self, batch):
-        imgs = [el['raw_img'] for el in batch]
-        tgts = [el['raw_label'] for el in batch]
+        imgs = [el['raw_img'] for el in batch if el is not None]
+        tgts = [el['raw_label'] for el in batch if el is not None]
         imgs = normalize_imgs(imgs)
         imgs, img_mask = pad_imgs(imgs)
         tgts, tgt_mask = self.tokenizer.encode(tgts)

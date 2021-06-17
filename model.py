@@ -8,11 +8,16 @@ import pytorch_lightning as pl
 from modules.PositionalEncoding import PositionalEncoding, PositionalEncoding2d
 from modules.TransformerEncoderLayer2d import TransformerEncoderLayer2d
 
+from argparse import Namespace
+
 
 class SATRNModel(pl.LightningModule):
     def __init__(self, hparams):
         super().__init__()
         self.save_hyperparameters(hparams)
+
+        if type(hparams) is dict:
+            hparams = Namespace(**hparams)
 
         #Shallow CNN
         self.shallow_conv = nn.Sequential(nn.Conv2d(1 if hparams.grayscale else 3, hparams.d_model, 3, padding=1),
@@ -34,6 +39,9 @@ class SATRNModel(pl.LightningModule):
         self.decoder = nn.TransformerDecoder(decoder_layers, hparams.nlayers_decoder)
         self.lin_out = nn.Linear(hparams.d_model, hparams.vocab_size)
         return
+
+    def set_tokenizer(self, tokenizer):
+        self.tokenizer = tokenizer
 
     def generate_square_subsequent_mask(self, L: int):
         mask = (torch.triu(torch.ones(L, L)) == 1).transpose(0, 1)
@@ -145,14 +153,14 @@ class SATRNModel(pl.LightningModule):
         acc = torch.sum(pred == tgt)
         nb_ex = tgt.size(0)
 
-        self.log('loss', loss, on_step=True, on_epoch=True, prog_bar=False, logger=True)
+        self.log('loss', loss, on_step=True, on_epoch=True, prog_bar=False, logger=True, sync_dist=True)
         return {'loss': loss, 'acc': acc, 'nb_ex': nb_ex}
 
     def training_epoch_end(self, outputs):
         acc = sum([out['acc'] for out in outputs])
         nb_ex = sum([out['nb_ex'] for out in outputs])
         acc = acc/nb_ex
-        self.log('acc', acc)
+        self.log('acc', acc, sync_dist=True)
 
     def validation_step(self, batch, batch_idx):
         with torch.no_grad():
@@ -166,11 +174,36 @@ class SATRNModel(pl.LightningModule):
             acc = torch.sum(pred == tgt)
             nb_ex = tgt.size(0)
 
-            self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=False, logger=True)
+            self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=False, logger=True, sync_dist=True)
         return {'loss': loss, 'acc': acc, 'nb_ex': nb_ex}
 
     def validation_epoch_end(self, outputs):
         acc = sum([out['acc'] for out in outputs])
         nb_ex = sum([out['nb_ex'] for out in outputs])
         acc = acc/nb_ex
-        self.log('val_acc', acc)
+        self.log('val_acc', acc, sync_dist=True)
+        print("---VALIDATION---")
+        print("acc: {}".format(acc))
+
+    def test_step(self, batch, batch_idx):
+        with torch.no_grad():
+            logits = self(**batch)
+            pred = logits.argmax(dim=2)
+            tgt = batch['tgt']
+
+            if batch_idx == 0:
+                print(self.tokenizer.decode(tgt.cpu().numpy()))
+                print(self.tokenizer.decode(pred.cpu().numpy()))
+
+            word_match = torch.min((pred == tgt).long(), dim=1)[0]
+            acc = torch.sum(word_match)
+            nb_ex = word_match.size(0)
+
+        return {'acc': acc, 'nb_ex': nb_ex}
+
+    def test_epoch_end(self, outputs):
+        acc = sum([out['acc'] for out in outputs])
+        nb_ex = sum([out['nb_ex'] for out in outputs])
+        acc = acc/nb_ex
+        print("---TEST---")
+        print("acc: {}".format(acc))

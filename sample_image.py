@@ -6,17 +6,19 @@ import numpy as np
 
 from dataset import OCRDataset
 
+from parameters import datasets
+
 hparams = {'grayscale': True,
            'resize': False,
            'width': 100,
            'height': 32}
 
-dataset = OCRDataset(sys.argv[1], Namespace(**hparams), is_train=False)
+dataset = OCRDataset(datasets[sys.argv[1]][0] + 'train.jsonl', Namespace(**hparams), is_train=False)
 
 sample = dataset[random.randint(0, len(dataset)-1)]
 print(sample['raw_label'])
 
-img = sample['raw_image']
+img = sample['raw_img']
 h, w, c = np.shape(img)
 
 if hparams['grayscale']:
@@ -24,4 +26,4 @@ if hparams['grayscale']:
     img = Image.fromarray(img, 'L')
 else:
     img = Image.fromarray(img)
-img.show()
+img.save("/home/gleberre/sample.jpg")
