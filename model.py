@@ -172,8 +172,8 @@ class SATRNModel(pl.LightningModule):
             assert len(tgt_words) == len(pred_words)
 
             out_dict = {}
-            for metric_name, metric in self.metrics:
-                out_dict[metric_name] = sum([self.metric(pred_words[i], tgt_words[i]) for i in range(len(tgt_words))])
+            for metric_name, metric in self.metrics.items():
+                out_dict[metric_name] = sum([metric(pred_words[i], tgt_words[i]) for i in range(len(tgt_words))])
 
             out_dict['nb_ex'] = len(tgt_words)
 
@@ -187,7 +187,7 @@ class SATRNModel(pl.LightningModule):
             metric_value = sum([out[metric_name] for out in outputs])
             metric_value /= float(nb_ex)
             print("{}: {}".format(metric_name, metric_value))
-            self.log('val_{}'.format(metric_name), metric_value)
+            self.log('val_{}'.format(metric_name), metric_value, sync_dist=True)
         return
 
     def test_step(self, batch, batch_idx):
@@ -201,8 +201,8 @@ class SATRNModel(pl.LightningModule):
             assert len(tgt_words) == len(pred_words)
 
             out_dict = {}
-            for metric_name, metric in self.metrics:
-                out_dict[metric_name] = sum([self.metric(pred_words[i], tgt_words[i]) for i in range(len(tgt_words))])
+            for metric_name, metric in self.metrics.items():
+                out_dict[metric_name] = sum([metric(pred_words[i], tgt_words[i]) for i in range(len(tgt_words))])
 
             out_dict['nb_ex'] = len(tgt_words)
 
@@ -216,5 +216,5 @@ class SATRNModel(pl.LightningModule):
             metric_value = sum([out[metric_name] for out in outputs])
             metric_value /= float(nb_ex)
             print("{}: {}".format(metric_name, metric_value))
-            self.log('test_{}'.format(metric_name), metric_value)
+            self.log('test_{}'.format(metric_name), metric_value, sync_dist=True)
         return

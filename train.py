@@ -1,4 +1,5 @@
 import pytorch_lightning as pl
+from pytorch_lightning.plugins import DDPPlugin
 
 import torch
 
@@ -28,18 +29,18 @@ if __name__ == '__main__':
     parser.add_argument('--resize', help="resize images to [--width] x [--height]", action='store_true')
     parser.add_argument('--save_best_model', action='store_true')
     parser.add_argument('--run_test', action='store_true')
+    parser.add_argument('--run_val', action='store_true')
+    parser.add_argument('--case_sensitive', action='store_true')
 
     args = parser.parse_args()
 
     args = argparse.Namespace(**vars(args), **parameters.models[args.model_type])
 
-    tokenizer = CharTokenizer()
+    tokenizer = CharTokenizer(case_sensitive=args.case_sensitive)
     args.vocab_size = tokenizer.vocab_size
     args.go_token_idx = tokenizer.go_token_idx
     args.end_token_idx = tokenizer.end_token_idx
 
-    if args.val_datasets is None:
-        args.val_datasets = args.datasets
     datamodule = OCRDataModule(args, parameters.datasets[args.datasets], tokenizer=tokenizer)
     if args.load_weights_from is None:
         model = SATRNModel(args, tokenizer=tokenizer)
@@ -69,6 +70,7 @@ if __name__ == '__main__':
 
     trainer = pl.Trainer(gpus=args.gpus,
                          accelerator='ddp',
+                         plugins=DDPPlugin(find_unused_parameters=False),
                          checkpoint_callback=args.save_best_model,
                          callbacks=callbacks,
                          gradient_clip_val=2.,
@@ -76,6 +78,9 @@ if __name__ == '__main__':
 
     if args.run_test:
         datamodule.setup(stage='test')
-        trainer.test(model, datamodule.test_dataloader())
+        trainer.test(model, datamodule.test_dataloaders())
+    elif args.run_val:
+        datamodule.setup(stage='validate')
+        trainer.test(model, datamodule.val_dataloaders())
     else:
         trainer.fit(model, datamodule)

@@ -41,15 +41,16 @@ class Tokenizer:
 
 
 class CharTokenizer(Tokenizer):
-    def __init__(self):
-       self.vocab = ["GO", "END"] + list(open("./ressources/charset.txt", 'r').read())
-       self.token_to_idx = {token: i for i, token in enumerate(self.vocab)}
-       self.go_token_idx = self.token_to_idx["GO"]
-       self.end_token_idx = self.token_to_idx["END"]
-       self.vocab_size = len(self.vocab)
+    def __init__(self, case_sensitive=False):
+        self.case_sensitive = case_sensitive
+        self.vocab = ["GO", "END"] + list(open("./ressources/charset.txt" if self.case_sensitive else "./ressources/charset_cap_only.txt", 'r').read())
+        self.token_to_idx = {token: i for i, token in enumerate(self.vocab)}
+        self.go_token_idx = self.token_to_idx["GO"]
+        self.end_token_idx = self.token_to_idx["END"]
+        self.vocab_size = len(self.vocab)
 
     def tokenize(self, sentences):
-        return [list(seq) for seq in sentences]
+        return [list(seq) if self.case_sensitive else list(seq.upper()) for seq in sentences]
 
     def detokenize(self, tokens):
         return [''.join(seq) for seq in tokens]
@@ -101,24 +102,26 @@ class OCRDataModule(pl.LightningDataModule):
 
     def setup(self, stage=None):
         if stage in (None, 'fit'):
-            train_datasets = [OCRDataset(path, self.hparams, is_train=True) for path in self.datasets_paths['train']]
-            val_datasets = [OCRDataset(path, self.hparams, is_train=False) for path in self.datasets_paths['val']]
-            self.train_dataset = ConcatDataset(train_datasets)
-            self.val_dataset = ConcatDataset(val_datasets)
+            self.train_datasets = [OCRDataset(path, self.hparams, is_train=True) for path in self.datasets_paths['train']]
+            self.val_datasets = [OCRDataset(path, self.hparams, is_train=False) for path in self.datasets_paths['val']]
 
         if stage == 'validate':
-            val_datasets = [OCRDataset(path, self.hparams, is_train=False) for path in self.datasets_paths['val']]
-            self.val_dataset = ConcatDataset(val_datasets)
+            self.val_datasets = [OCRDataset(path, self.hparams, is_train=False) for path in self.datasets_paths['val']]
 
         if stage in (None, 'test'):
-            test_datasets = [OCRDataset(path, self.hparams, is_train=False) for path in self.test_datasets_paths['test']]
-            self.test_dataset = ConcatDataset(test_datasets)
+            self.test_datasets = [OCRDataset(path, self.hparams, is_train=False) for path in self.datasets_paths['test']]
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.hparams.bs, shuffle=True, collate_fn=self.collate_fn, num_workers=self.num_workers)
+        return DataLoader(ConcatDataset(self.train_datasets), batch_size=self.hparams.bs, shuffle=True, collate_fn=self.collate_fn, num_workers=self.num_workers)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.hparams.bs, collate_fn=self.collate_fn, num_workers=self.num_workers)
+        return DataLoader(ConcatDataset(self.val_datasets), batch_size=self.hparams.bs, collate_fn=self.collate_fn, num_workers=self.num_workers)
+
+    def val_dataloaders(self):
+        return [DataLoader(dataset, batch_size=self.hparams.bs, collate_fn=self.collate_fn, num_workers=self.num_workers) for dataset in self.val_datasets]
 
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.hparams.bs, collate_fn=self.collate_fn, num_workers=self.num_workers)
+        return DataLoader(ConcatDataset(self.test_datasets), batch_size=self.hparams.bs, collate_fn=self.collate_fn, num_workers=self.num_workers)
+
+    def test_dataloaders(self):
+        return [DataLoader(dataset, batch_size=self.hparams.bs, collate_fn=self.collate_fn, num_workers=self.num_workers) for dataset in self.test_datasets]
