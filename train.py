@@ -38,11 +38,13 @@ if __name__ == '__main__':
     args.go_token_idx = tokenizer.go_token_idx
     args.end_token_idx = tokenizer.end_token_idx
 
-    datamodule = OCRDataModule(args, parameters.datasets[args.datasets], tokenizer)
+    if args.val_datasets is None:
+        args.val_datasets = args.datasets
+    datamodule = OCRDataModule(args, parameters.datasets[args.datasets], tokenizer=tokenizer)
     if args.load_weights_from is None:
-        model = SATRNModel(args)
+        model = SATRNModel(args, tokenizer=tokenizer)
     else:
-        model = SATRNModel.load_from_checkpoint(args.load_weights_from)
+        model = SATRNModel.load_from_checkpoint(args.load_weights_from, tokenizer=tokenizer)
 
     # reproducibility
     pl.seed_everything(42)
@@ -74,7 +76,6 @@ if __name__ == '__main__':
 
     if args.run_test:
         datamodule.setup(stage='test')
-        model.set_tokenizer(tokenizer)
         trainer.test(model, datamodule.test_dataloader())
     else:
         trainer.fit(model, datamodule)

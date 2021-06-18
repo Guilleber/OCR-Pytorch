@@ -77,11 +77,14 @@ def pad_imgs(imgs):
 
 
 class OCRDataModule(pl.LightningDataModule):
-    def __init__(self, hparams, folder_paths, tokenizer):
+    def __init__(self, hparams, datasets_paths, tokenizer=None):
         super().__init__()
         self.hparams = hparams
-        self.tokenizer = tokenizer
-        self.folder_paths = folder_paths
+        if tokenizer is None:
+            self.tokenizer = CharTokenizer()
+        else:
+            self.tokenizer = tokenizer
+        self.datasets_paths = datasets_paths
         self.num_workers = 4
 
     def collate_fn(self, batch):
@@ -98,13 +101,17 @@ class OCRDataModule(pl.LightningDataModule):
 
     def setup(self, stage=None):
         if stage in (None, 'fit'):
-            train_datasets = [OCRDataset(path + 'train.jsonl', self.hparams) for path in self.folder_paths]
-            val_datasets = [OCRDataset(path + 'val.jsonl', self.hparams, is_train=False) for path in self.folder_paths]
+            train_datasets = [OCRDataset(path, self.hparams, is_train=True) for path in self.datasets_paths['train']]
+            val_datasets = [OCRDataset(path, self.hparams, is_train=False) for path in self.datasets_paths['val']]
             self.train_dataset = ConcatDataset(train_datasets)
             self.val_dataset = ConcatDataset(val_datasets)
 
+        if stage == 'validate':
+            val_datasets = [OCRDataset(path, self.hparams, is_train=False) for path in self.datasets_paths['val']]
+            self.val_dataset = ConcatDataset(val_datasets)
+
         if stage in (None, 'test'):
-            test_datasets = [OCRDataset(path + 'test.jsonl', self.hparams, is_train=False) for path in self.folder_paths]
+            test_datasets = [OCRDataset(path, self.hparams, is_train=False) for path in self.test_datasets_paths['test']]
             self.test_dataset = ConcatDataset(test_datasets)
 
     def train_dataloader(self):

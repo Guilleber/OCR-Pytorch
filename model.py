@@ -7,41 +7,37 @@ import pytorch_lightning as pl
 
 from modules.PositionalEncoding import PositionalEncoding, PositionalEncoding2d
 from modules.TransformerEncoderLayer2d import TransformerEncoderLayer2d
+from metrics import exact_match, char_error_rate, word_error_rate
 
 from argparse import Namespace
 
 
 class SATRNModel(pl.LightningModule):
-    def __init__(self, hparams):
+    def __init__(self, hparams, tokenizer):
         super().__init__()
         self.save_hyperparameters(hparams)
-
-        if type(hparams) is dict:
-            hparams = Namespace(**hparams)
+        self.tokenizer = tokenizer
 
         #Shallow CNN
-        self.shallow_conv = nn.Sequential(nn.Conv2d(1 if hparams.grayscale else 3, hparams.d_model, 3, padding=1),
+        self.shallow_conv = nn.Sequential(nn.Conv2d(1 if self.hparams.grayscale else 3, self.hparams.d_model, 3, padding=1),
                                           nn.MaxPool2d(kernel_size=2, stride=2),
                                           nn.ReLU(),
-                                          nn.Dropout(hparams.dropout),
-                                          nn.Conv2d(hparams.d_model, hparams.d_model, 3, padding=1),
+                                          nn.Dropout(self.hparams.dropout),
+                                          nn.Conv2d(self.hparams.d_model, self.hparams.d_model, 3, padding=1),
                                           nn.MaxPool2d(kernel_size=2, stride=2))
 
         #Encoder
-        self.encoder_pe = PositionalEncoding2d(hparams.d_model, hparams.dropout)
-        encoder_layers = TransformerEncoderLayer2d(hparams.d_model, hparams.nhead, hparams.d_hidden, dropout=hparams.dropout)
-        self.encoder = nn.TransformerEncoder(encoder_layers, hparams.nlayers_encoder)
+        self.encoder_pe = PositionalEncoding2d(self.hparams.d_model, self.hparams.dropout)
+        encoder_layers = TransformerEncoderLayer2d(self.hparams.d_model, self.hparams.nhead, self.hparams.d_hidden, dropout=self.hparams.dropout)
+        self.encoder = nn.TransformerEncoder(encoder_layers, self.hparams.nlayers_encoder)
 
         #Decoder
-        self.decoder_emb = nn.Embedding(hparams.vocab_size, hparams.d_model)
-        self.decoder_pe = PositionalEncoding(hparams.d_model, hparams.dropout)
-        decoder_layers = nn.TransformerDecoderLayer(hparams.d_model, hparams.nhead, hparams.d_hidden, dropout=hparams.dropout)
-        self.decoder = nn.TransformerDecoder(decoder_layers, hparams.nlayers_decoder)
-        self.lin_out = nn.Linear(hparams.d_model, hparams.vocab_size)
+        self.decoder_emb = nn.Embedding(self.hparams.vocab_size, self.hparams.d_model)
+        self.decoder_pe = PositionalEncoding(self.hparams.d_model, self.hparams.dropout)
+        decoder_layers = nn.TransformerDecoderLayer(self.hparams.d_model, self.hparams.nhead, self.hparams.d_hidden, dropout=self.hparams.dropout)
+        self.decoder = nn.TransformerDecoder(decoder_layers, self.hparams.nlayers_decoder)
+        self.lin_out = nn.Linear(self.hparams.d_model, self.hparams.vocab_size)
         return
-
-    def set_tokenizer(self, tokenizer):
-        self.tokenizer = tokenizer
 
     def generate_square_subsequent_mask(self, L: int):
         mask = (torch.triu(torch.ones(L, L)) == 1).transpose(0, 1)
@@ -191,13 +187,12 @@ class SATRNModel(pl.LightningModule):
             pred = logits.argmax(dim=2)
             tgt = batch['tgt']
 
-            if batch_idx == 0:
-                print(self.tokenizer.decode(tgt.cpu().numpy()))
-                print(self.tokenizer.decode(pred.cpu().numpy()))
+            tgt_words = self.tokenizer.decode(tgt.cpu().numpy())
+            pred_words = self.tokenizer.decode(pred.cpu().numpy())
+            assert len(tgt_words) == len(pred_words)
 
-            word_match = torch.min((pred == tgt).long(), dim=1)[0]
-            acc = torch.sum(word_match)
-            nb_ex = word_match.size(0)
+            acc = sum([1 if tgt_words[i].upper() == pred_words[i].upper() else 0 for i in range(len(tgt_words))])
+            nb_ex = len(tgt_words)
 
         return {'acc': acc, 'nb_ex': nb_ex}
 
