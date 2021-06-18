@@ -18,6 +18,8 @@ class SATRNModel(pl.LightningModule):
         self.save_hyperparameters(hparams)
         self.tokenizer = tokenizer
 
+        self.metrics = {'acc': exact_match, 'cer': char_error_rate, 'wer': word_error_rate}
+
         #Shallow CNN
         self.shallow_conv = nn.Sequential(nn.Conv2d(1 if self.hparams.grayscale else 3, self.hparams.d_model, 3, padding=1),
                                           nn.MaxPool2d(kernel_size=2, stride=2),
@@ -157,29 +159,36 @@ class SATRNModel(pl.LightningModule):
         nb_ex = sum([out['nb_ex'] for out in outputs])
         acc = acc/nb_ex
         self.log('acc', acc, sync_dist=True)
+        return
 
     def validation_step(self, batch, batch_idx):
         with torch.no_grad():
             logits = self(**batch)
-            logits = logits.reshape(-1, logits.size(2))
-            tgt = batch['tgt'].view(-1)
+            pred = logits.argmax(dim=2)
+            tgt = batch['tgt']
 
-            loss = F.cross_entropy(logits, tgt)
+            tgt_words = self.tokenizer.decode(tgt.cpu().numpy())
+            pred_words = self.tokenizer.decode(pred.cpu().numpy())
+            assert len(tgt_words) == len(pred_words)
 
-            pred = logits.argmax(dim=1)
-            acc = torch.sum(pred == tgt)
-            nb_ex = tgt.size(0)
+            out_dict = {}
+            for metric_name, metric in self.metrics:
+                out_dict[metric_name] = sum([self.metric(pred_words[i], tgt_words[i]) for i in range(len(tgt_words))])
 
-            self.log('val_loss', loss, on_step=True, on_epoch=True, prog_bar=False, logger=True, sync_dist=True)
-        return {'loss': loss, 'acc': acc, 'nb_ex': nb_ex}
+            out_dict['nb_ex'] = len(tgt_words)
+
+        return out_dict
 
     def validation_epoch_end(self, outputs):
-        acc = sum([out['acc'] for out in outputs])
+        print("---VAL-RESULTS---")
         nb_ex = sum([out['nb_ex'] for out in outputs])
-        acc = acc/nb_ex
-        self.log('val_acc', acc, sync_dist=True)
-        print("---VALIDATION---")
-        print("acc: {}".format(acc))
+
+        for metric_name in self.metrics:
+            metric_value = sum([out[metric_name] for out in outputs])
+            metric_value /= float(nb_ex)
+            print("{}: {}".format(metric_name, metric_value))
+            self.log('val_{}'.format(metric_name), metric_value)
+        return
 
     def test_step(self, batch, batch_idx):
         with torch.no_grad():
@@ -191,14 +200,21 @@ class SATRNModel(pl.LightningModule):
             pred_words = self.tokenizer.decode(pred.cpu().numpy())
             assert len(tgt_words) == len(pred_words)
 
-            acc = sum([1 if tgt_words[i].upper() == pred_words[i].upper() else 0 for i in range(len(tgt_words))])
-            nb_ex = len(tgt_words)
+            out_dict = {}
+            for metric_name, metric in self.metrics:
+                out_dict[metric_name] = sum([self.metric(pred_words[i], tgt_words[i]) for i in range(len(tgt_words))])
 
-        return {'acc': acc, 'nb_ex': nb_ex}
+            out_dict['nb_ex'] = len(tgt_words)
+
+        return out_dict
 
     def test_epoch_end(self, outputs):
-        acc = sum([out['acc'] for out in outputs])
+        print("---TEST-RESULTS---")
         nb_ex = sum([out['nb_ex'] for out in outputs])
-        acc = acc/nb_ex
-        print("---TEST---")
-        print("acc: {}".format(acc))
+
+        for metric_name in self.metrics:
+            metric_value = sum([out[metric_name] for out in outputs])
+            metric_value /= float(nb_ex)
+            print("{}: {}".format(metric_name, metric_value))
+            self.log('test_{}'.format(metric_name), metric_value)
+        return

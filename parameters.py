@@ -1,7 +1,7 @@
-datasets = {'synthtext+mjsynth': ['../../datasets/ocr/mjsynth/',
-                                  '/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/synthtext/'],
-            'funsd': ['/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/funsd/'],
-            'svt': ['../../datasets/ocr/svt/']}
+datasets = {'synthtext+mjsynth': {'train': ['../../datasets/ocr/mjsynth/train.jsonl',
+                                               '/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/synthtext/train.jsonl'],
+                                  'val': ['../../datasets/ocr/svt/train.jsonl'],
+                                  'test': ['../../datasets/ocr/svt/test.jsonl']}}
 
 models = {'satrn-large': {'d_model': 512,
                           'd_hidden': 2048,
