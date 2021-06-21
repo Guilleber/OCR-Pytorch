@@ -5,12 +5,13 @@ import jsonlines
 from PIL import Image, ImageFile
 import random
 import numpy as np
+from typing import Dict, Optional, Tuple
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 class OCRDataset(Dataset):
-    def __init__(self, path, hparams, is_train=True):
+    def __init__(self, path: str, hparams: Dict, is_train: Optional[bool] = True):
         super().__init__()
         self.hparams = hparams
         self.resize = (self.hparams.width, self.hparams.height) if self.hparams.resize else None
@@ -19,7 +20,9 @@ class OCRDataset(Dataset):
         self.is_train = is_train
 
     @staticmethod
-    def load_and_transform(img_path, crop=None, resize=None, is_train=False, grayscale=True):
+    def load_and_transform(img_path: str, crop: Optional[Dict] = None,
+                           resize: Optional[Tuple[int, int]] = None, is_train: Optional[bool] = False,
+                           grayscale: Optional[bool] = True) -> np.ndarray:
         img = Image.open(img_path)
 
         if grayscale:
@@ -49,7 +52,7 @@ class OCRDataset(Dataset):
     def __len__(self):
         return len(self.data)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> Dict:
         try:
             raw_img = OCRDataset.load_and_transform(self.folder_path + self.data[index]['img'],
                                                     crop=self.data[index]['box'],

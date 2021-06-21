@@ -9,21 +9,29 @@ import random
 import numpy as np
 import os
 
+from typing import Iterable, List, Tuple, Optional
+
 from dataset import OCRDataset
 
 
 class Tokenizer:
-    def ids2tokens(self, ids):
+    def tokenize(self, sentences: Iterable[str]) -> List[List[str]]:
+        raise NotImplementedError()
+
+    def detokenize(self, tokens: Iterable[Iterable[str]]) -> List[str]:
+        raise NotImplementedError()
+
+    def ids2tokens(self, ids: Iterable[Iterable[int]]) -> List[List[str]]:
         return [[self.vocab[idx] for idx in seq if idx not in [self.go_token_idx, self.end_token_idx]] for seq in ids]
 
-    def decode(self, ids):
+    def decode(self, ids: Iterable[Iterable[int]]) -> List[str]:
         tokens = self.ids2tokens(ids)
         return self.detokenize(tokens)
 
-    def tokens2ids(self, tokens):
+    def tokens2ids(self, tokens: Iterable[Iterable[str]]) -> List[List[int]]:
         return [[self.token_to_idx[token] for token in seq] for seq in tokens]
 
-    def pad(self, ids):
+    def pad(self, ids: Iterable[Iterable[int]]) -> Tuple[np.ndarray, np.ndarray]:
         max_len = max([len(seq) for seq in ids])
         bs = len(ids)
         padded_ids = self.end_token_idx * np.ones((bs, max_len), dtype=np.int8)
@@ -34,14 +42,14 @@ class Tokenizer:
                 mask[i][j] = False
         return padded_ids, mask
 
-    def encode(self, sentences):
+    def encode(self, sentences: Iterable[str]) -> Tuple[np.ndarray, np.ndarray]:
         tokens = self.tokenize(sentences)
         ids = self.tokens2ids(tokens)
         return self.pad(ids)
 
 
 class CharTokenizer(Tokenizer):
-    def __init__(self, case_sensitive=False):
+    def __init__(self, case_sensitive: Optional[bool] = False):
         self.case_sensitive = case_sensitive
         self.vocab = ["GO", "END"] + list(open("./ressources/charset.txt" if self.case_sensitive else "./ressources/charset_cap_only.txt", 'r').read())
         self.token_to_idx = {token: i for i, token in enumerate(self.vocab)}
@@ -49,10 +57,10 @@ class CharTokenizer(Tokenizer):
         self.end_token_idx = self.token_to_idx["END"]
         self.vocab_size = len(self.vocab)
 
-    def tokenize(self, sentences):
+    def tokenize(self, sentences: Iterable[str]) -> List[List[str]]:
         return [list(seq) if self.case_sensitive else list(seq.upper()) for seq in sentences]
 
-    def detokenize(self, tokens):
+    def detokenize(self, tokens: Iterable[Iterable[str]]) -> List[str]:
         return [''.join(seq) for seq in tokens]
 
 
