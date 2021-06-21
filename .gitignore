@@ -1,5 +1,6 @@
 /saved_models
 /lightning_logs
+/imgs
 
 __pycache__/
 *.pyc
