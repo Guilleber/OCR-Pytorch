@@ -1,4 +1,4 @@
-from typing import List, Iterable
+from typing import List, Iterable, Any
 from nltk.tokenize import word_tokenize
 
 
@@ -6,7 +6,7 @@ def exact_match(prediction: str, target: str) -> float:
     return 1.0 if prediction == target else 0.0
 
 
-def levenshtein(s1: Iterable, s2: Iterable) -> int:
+def levenshtein(s1: Iterable[Any], s2: Iterable[Any]) -> int:
     dist = [[0 for _ in range(len(s1) + 1)] for _ in range(len(s2) + 1)]
     dist[0] = range(len(s1) + 1)
     
