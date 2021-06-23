@@ -8,4 +8,5 @@ models = {'satrn-large': {'d_model': 512,
                           'dropout': 0.1,
                           'nlayers_encoder': 12,
                           'nlayers_decoder': 6,
-                          'nhead': 8}}
+                          'nhead': 8,
+                          'positional_enc': 'a2dpe'}}

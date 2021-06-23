@@ -33,7 +33,6 @@ if __name__ == '__main__':
     parser.add_argument('--run_test', action='store_true')
     parser.add_argument('--run_val', action='store_true')
     parser.add_argument('--case_sensitive', action='store_true')
-    parser.add_argument('--a2dpe', action='store_true', help="Use the Adaptative 2D Positional Encoding used in original SATRN paper")
 
     args = parser.parse_args()
 
