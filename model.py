@@ -167,6 +167,8 @@ class SATRNModel(pl.LightningModule):
         nb_ex = sum([out['nb_ex'] for out in outputs])
         acc = acc/nb_ex
         self.log('acc', acc, sync_dist=True)
+
+        print("epoch end time = {}".format(datetime.now().strftime("%d/%m/%Y %H:%M")))
         return
 
     def validation_step(self, batch, batch_idx):

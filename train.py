@@ -4,6 +4,8 @@ from pytorch_lightning.plugins import DDPPlugin
 import torch
 
 import argparse
+from datetime import datetime
+import sys
 
 from datamodule import OCRDataModule, CharTokenizer
 from model import SATRNModel
@@ -20,8 +22,8 @@ if __name__ == '__main__':
     parser.add_argument('--bs', type=int, help="mini-batch size", default=32)
     parser.add_argument('--gpus', type=int, default=-1)
     parser.add_argument('--epochs', type=int, default=4)
-    parser.add_argument('--height', type=int, default=32)
-    parser.add_argument('--width', type=int, default=100)
+    parser.add_argument('--height', type=int, default=32, help="Height to which the image are resized. Ignored if [--resize] is not used.")
+    parser.add_argument('--width', type=int, default=100, help="Width to which the image are resized. Ignored if [--resize] is not used.")
 
     parser.add_argument('--lr', type=float, help="learning rate", default=3e-4)
 
@@ -31,10 +33,15 @@ if __name__ == '__main__':
     parser.add_argument('--run_test', action='store_true')
     parser.add_argument('--run_val', action='store_true')
     parser.add_argument('--case_sensitive', action='store_true')
+    parser.add_argument('--a2dpe', action='store_true', help="Use the Adaptative 2D Positional Encoding used in original SATRN paper")
 
     args = parser.parse_args()
 
     args = argparse.Namespace(**vars(args), **parameters.models[args.model_type])
+
+    # print to error stream as the logs for the standard stream are often full of junk :)
+    print("parameters = {}".format(args), file=sys.stderr)
+    print("start time = {}".format(datetime.now().strftime("%d/%m/%Y %H:%M")), file=sys.stderr)
 
     tokenizer = CharTokenizer(case_sensitive=args.case_sensitive)
     args.vocab_size = tokenizer.vocab_size
@@ -84,3 +91,5 @@ if __name__ == '__main__':
         trainer.test(model, datamodule.val_dataloaders())
     else:
         trainer.fit(model, datamodule)
+
+    print("end time = {}".format(datetime.now().strftime("%d/%m/%Y %H:%M")))
