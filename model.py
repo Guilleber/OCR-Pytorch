@@ -11,6 +11,8 @@ from modules.Transformer import TransformerDecoder, TransformerDecoderLayer
 from metrics import exact_match, char_error_rate, word_error_rate
 
 from argparse import Namespace
+from datetime import datetime
+import sys
 
 
 class SATRNModel(pl.LightningModule):
@@ -172,7 +174,7 @@ class SATRNModel(pl.LightningModule):
         acc = acc/nb_ex
         self.log('acc', acc, sync_dist=True)
 
-        print("epoch end time = {}".format(datetime.now().strftime("%d/%m/%Y %H:%M")))
+        print("epoch end time = {}".format(datetime.now().strftime("%d/%m/%Y %H:%M")), file=sys.stderr)
         return
 
     def validation_step(self, batch, batch_idx):

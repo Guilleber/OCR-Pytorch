@@ -38,7 +38,7 @@ class PositionalEncoding2d(nn.Module):
         d_model = d_model // 2
         pos_h = torch.arange(0, max_height, dtype=torch.float).unsqueeze(1)
         pos_w = torch.arange(0, max_width, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        div_term = torch.exp(torch.arange(0, d_model, 2, dtype=torch.float) * (-math.log(10000.0) / d_model))
 
         pe[:, :, 0:d_model:2] = torch.sin(pos_w * div_term).unsqueeze(0).repeat(max_height, 1, 1)
         pe[:, :, 1:d_model:2] = torch.cos(pos_w * div_term).unsqueeze(0).repeat(max_height, 1, 1)
@@ -70,7 +70,7 @@ class A2DPE(nn.Module):
         pe_w = torch.zeros(max_height, max_width, d_model)
         pos_h = torch.arange(0, max_height, dtype=torch.float).unsqueeze(1)
         pos_w = torch.arange(0, max_width, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        div_term = torch.exp(torch.arange(0, d_model, 2, dtype=torch.float) * (-math.log(10000.0) / d_model))
 
         pe_w[:, :, 0::2] = torch.sin(pos_w * div_term).unsqueeze(0).repeat(max_height, 1, 1)
         pe_w[:, :, 1::2] = torch.cos(pos_w * div_term).unsqueeze(0).repeat(max_height, 1, 1)
@@ -87,6 +87,48 @@ class A2DPE(nn.Module):
         x : H x W x N x C
         """
         H, W, N, C = x.size()
+
+        alpha = self.linear_alpha(x.reshape(-1, N, C).mean(dim=0)) # -> N x 2C
+        alpha = alpha.reshape(1, 1, N, 2*C) # -> 1 x 1 x N x 2C
+        x = x + alpha[:, :, :, :C]*self.pe_h[:H, :W, :, :] + alpha[:, :, :, C:]*self.pe_w[:H, :W, :, :]
+        return self.dropout(x)
+
+
+class ExperimentalPositionalEncoding(nn.Module):
+    def __init__(self, d_model: int, dropout: Optional[float] = 0.1, max_height: Optional[int] = 1000,
+                 max_width: Optional[int] = 1000):
+        super().__init__()
+        self.d_model = d_model
+        self.dropout = nn.Dropout(dropout)
+        self.linear_alpha = nn.Sequential(nn.Linear(d_model, d_model//2),
+                                          nn.ReLU(),
+                                          nn.Dropout(dropout),
+                                          nn.Linear(d_model//2, 2*d_model),
+                                          nn.Sigmoid())
+
+        pe = torch.zeros(max_height, max_width, d_model, dtype=torch.float)
+        pos_h = torch.arange(0, max_height, dtype=torch.float).unsqueeze(1)
+        pos_w = torch.arange(0, max_width, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2, dtype=torch.float) * (-math.log(10000.0) / d_model))
+
+        pe_w[:, :, 0::2] = torch.sin(pos_w * div_term).unsqueeze(0).repeat(max_height, 1, 1)
+        pe_w[:, :, 1::2] = torch.cos(pos_w * div_term).unsqueeze(0).repeat(max_height, 1, 1)
+        pe_h[:, :, 0::2] = torch.sin(pos_h * div_term).unsqueeze(1).repeat(1, max_width, 1)
+        pe_h[:, :, 1::2] = torch.cos(pos_h * div_term).unsqueeze(1).repeat(1, max_width, 1)
+        
+        pe_w = pe_w.unsqueeze(2)
+        pe_h = pe_h.unsqueeze(2)
+        self.register_buffer('div_term', div_term)
+
+    def forward(self, x: Tensor) -> Tensor:
+        """
+        x : H x W x N x C
+        """
+        H, W, N, C = x.size()
+        
+        pe = torch.zeros(H, W, self.d_model, dtype=torch.float)
+        pos_h = torch.arange(0, max_height, dtype=torch.float).unsqueeze(1)
+        pos_w = torch.arange(0, max_width, dtype=torch.float).unsqueeze(1)
 
         alpha = self.linear_alpha(x.reshape(-1, N, C).mean(dim=0)) # -> N x 2C
         alpha = alpha.reshape(1, 1, N, 2*C) # -> 1 x 1 x N x 2C
