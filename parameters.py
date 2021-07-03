@@ -9,4 +9,11 @@ models = {'satrn-large': {'d_model': 512,
                           'nlayers_encoder': 12,
                           'nlayers_decoder': 6,
                           'nhead': 8,
-                          'positional_enc': 'a2dpe'}}
+                          'positional_enc': 'a2dpe'},
+          'satrn-large-exp': {'d_model': 512,
+                              'd_hidden': 2048,
+                              'dropout': 0.1,
+                              'nlayers_encoder': 12,
+                              'nlayers_decoder': 6,
+                              'nhead': 8,
+                              'positional_enc': 'experimental'}}

@@ -5,7 +5,7 @@ from torch.optim import Adam
 
 import pytorch_lightning as pl
 
-from modules.PositionalEncoding import PositionalEncoding, PositionalEncoding2d, A2DPE
+from modules.PositionalEncoding import PositionalEncoding, PositionalEncoding2d, A2DPE, ExperimentalPositionalEncoding
 from modules.TransformerEncoderLayer2d import TransformerEncoderLayer2d
 from modules.Transformer import TransformerDecoder, TransformerDecoderLayer
 from metrics import exact_match, char_error_rate, word_error_rate
@@ -36,6 +36,8 @@ class SATRNModel(pl.LightningModule):
             self.encoder_pe = PositionalEncoding2d(self.hparams.d_model, self.hparams.dropout)
         elif self.hparams.positional_enc == 'a2dpe':
             self.encoder_pe = A2DPE(self.hparams.d_model, self.hparams.dropout)
+        elif self.hparams.positional_enc == 'experimental':
+            self.encoder_pe = ExperimentalPositionalEncoding(self.hparams.d_model, self.hparams.dropout)
 
         encoder_layers = TransformerEncoderLayer2d(self.hparams.d_model, self.hparams.nhead, self.hparams.d_hidden, dropout=self.hparams.dropout)
         self.encoder = nn.TransformerEncoder(encoder_layers, self.hparams.nlayers_encoder)
