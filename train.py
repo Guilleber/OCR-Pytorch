@@ -86,10 +86,14 @@ if __name__ == '__main__':
 
     if args.run_test:
         datamodule.setup(stage='test')
-        trainer.test(model, datamodule.test_dataloaders())
+        for i, dataloader in enumerate(datamodules.test_dataloaders()):
+            print("#test dataset {}".format(parameters.datasets[args.datasets]['test'][i]))
+            trainer.test(model, dataloader)
     elif args.run_val:
         datamodule.setup(stage='validate')
-        trainer.test(model, datamodule.val_dataloaders())
+        for i, dataloader in enumerate(datamodules.val_dataloaders()):
+            print("#test dataset {}".format(parameters.datasets[args.datasets]['val'][i]))
+            trainer.test(model, dataloader)
     else:
         trainer.fit(model, datamodule)
 
