@@ -25,5 +25,5 @@ def char_error_rate(prediction: str, target: str) -> float:
 
 def word_error_rate(prediction: str, target: str) -> float:
     prediction = word_tokenize(prediction)
-    target = word_tokenize(target)
-    return float(levenshtein(prediction, target))/len(target)
+    target_ = word_tokenize(target)
+    return float(levenshtein(prediction, target_))/len(target_)

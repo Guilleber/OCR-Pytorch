@@ -16,7 +16,7 @@ if __name__ == '__main__':
     parser.add_argument('img_path', type=str)
     
     parser.add_argument('--height', type=int, default=32)
-    parser.add_argument('--width', type=int, default=100)
+    parser.add_argument('--width', type=int, default=-1)
 
     parser.add_argument('--grayscale', help="transform images to grayscale", action='store_true')
     parser.add_argument('--resize', help="resize images to [--width] x [--height]", action='store_true')
@@ -29,7 +29,7 @@ if __name__ == '__main__':
     tokenizer = CharTokenizer(case_sensitive=args.case_sensitive)
     model = SATRNModel.load_from_checkpoint(args.load_weights_from, tokenizer=tokenizer)
 
-    resize = (args.width, args.height) if args.resize else None
+    resize = [args.width, args.height] if args.resize else None
     image = OCRDataset.load_and_transform(args.img_path, crop=args.crop, resize=resize, is_train=False, grayscale=args.grayscale)
 
     img = torch.from_numpy(image).long()

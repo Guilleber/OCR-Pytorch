@@ -42,7 +42,6 @@ class TransformerEncoderLayer2d(nn.Module):
             src_mask: None
             src_key_padding_mask: N x H x W
         """
-
         (H, W, N, C) = src.size()
         assert C == self.d_model
 

@@ -18,6 +18,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--datasets', type=str, help="Datasets to use for training. Must match one in parameters.py")
     parser.add_argument('--exp_name', type=str, default='exp')
     parser.add_argument('--load_weights_from', type=str, default=None)
+    parser.add_argument('--resume_from', type=str, default=None)
     
     parser.add_argument('--bs', type=int, help="mini-batch size", default=32)
     parser.add_argument('--gpus', type=int, default=1)
@@ -33,6 +34,7 @@ if __name__ == '__main__':
     parser.add_argument('--run_test', action='store_true')
     parser.add_argument('--run_val', action='store_true')
     parser.add_argument('--case_sensitive', action='store_true')
+    parser.add_argument('--augmentation', action='store_true')
 
     args = parser.parse_args()
 
@@ -61,19 +63,19 @@ if __name__ == '__main__':
     # saves best model
     callbacks = []
     if args.save_best_model:
-        checkpoint_callback = pl.callbacks.ModelCheckpoint(monitor='val_acc',
+        checkpoint_callback = pl.callbacks.ModelCheckpoint(monitor='val_cer',
                                              dirpath='./saved_models/',
-                                             filename=args.exp_name + '-{epoch:02d}-{val_acc:2.2f}',
+                                             filename=args.exp_name + '-{epoch:02d}-{val_cer:2.2f}',
                                              save_top_k=1,
                                              verbose=True,
-                                             mode='max')
+                                             mode='min')
         callbacks.append(checkpoint_callback)
 
     # early stopping
-    early_stopping_callback = pl.callbacks.EarlyStopping(monitor='val_acc',
+    early_stopping_callback = pl.callbacks.EarlyStopping(monitor='val_cer',
                                                min_delta=0.0,
                                                patience=2,
-                                               mode='max')
+                                               mode='min')
     callbacks.append(early_stopping_callback)
 
     trainer = pl.Trainer(gpus=args.gpus,
@@ -82,17 +84,18 @@ if __name__ == '__main__':
                          checkpoint_callback=args.save_best_model,
                          callbacks=callbacks,
                          gradient_clip_val=2.,
+                         resume_from_checkpoint=args.resume_from,
                          max_epochs=args.epochs)
 
     if args.run_test:
         datamodule.setup(stage='test')
-        for i, dataloader in enumerate(datamodules.test_dataloaders()):
+        for i, dataloader in enumerate(datamodule.test_dataloaders()):
             print("#test dataset {}".format(parameters.datasets[args.datasets]['test'][i]))
             trainer.test(model, dataloader)
     elif args.run_val:
         datamodule.setup(stage='validate')
-        for i, dataloader in enumerate(datamodules.val_dataloaders()):
-            print("#test dataset {}".format(parameters.datasets[args.datasets]['val'][i]))
+        for i, dataloader in enumerate(datamodule.val_dataloaders()):
+            print("#val dataset {}".format(parameters.datasets[args.datasets]['val'][i]))
             trainer.test(model, dataloader)
     else:
         trainer.fit(model, datamodule)

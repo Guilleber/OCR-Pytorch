@@ -29,15 +29,16 @@ class Tokenizer:
         return self.detokenize(tokens)
 
     def tokens2ids(self, tokens: Iterable[Iterable[str]]) -> List[List[int]]:
-        return [[self.token_to_idx[token] for token in seq] for seq in tokens]
+        return [[self.token_to_idx[token] for token in seq if token in self.token_to_idx] for seq in tokens]
 
     def pad(self, ids: Iterable[Iterable[int]]) -> Tuple[np.ndarray, np.ndarray]:
         max_len = max([len(seq) for seq in ids])
+        max_len = min(max_len, 50)
         bs = len(ids)
         padded_ids = self.end_token_idx * np.ones((bs, max_len), dtype=np.int8)
         mask = np.ones((bs, max_len), dtype=bool)
         for i in range(bs):
-            for j in range(len(ids[i])):
+            for j in range(len(ids[i]))[:max_len]:
                 padded_ids[i, j] = ids[i][j]
                 mask[i][j] = False
         return padded_ids, mask
@@ -94,7 +95,7 @@ class OCRDataModule(pl.LightningDataModule):
         else:
             self.tokenizer = tokenizer
         self.datasets_paths = datasets_paths
-        self.num_workers = 4
+        self.num_workers = 8
 
     def collate_fn(self, batch):
         imgs = [el['raw_img'] for el in batch if el is not None]
@@ -110,7 +111,7 @@ class OCRDataModule(pl.LightningDataModule):
 
     def setup(self, stage=None):
         if stage in (None, 'fit'):
-            self.train_datasets = [OCRDataset(path, self.hparams, is_train=True) for path in self.datasets_paths['train']]
+            self.train_datasets = [OCRDataset(path, self.hparams, is_train=self.hparams.augmentation) for path in self.datasets_paths['train']]
             self.val_datasets = [OCRDataset(path, self.hparams, is_train=False) for path in self.datasets_paths['val']]
 
         if stage == 'validate':

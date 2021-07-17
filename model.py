@@ -123,7 +123,7 @@ class SATRNModel(pl.LightningModule):
         logits = logits.transpose(0, 1) # -> N x L x V
         return logits
 
-    def generate(self, img, img_padding_mask, max_length=25):
+    def generate(self, img, img_padding_mask, max_length=50):
         """
         Shape:
             img: N x C x H x W
