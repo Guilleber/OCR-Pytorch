@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader, Dataset
 import sys
 
 import jsonlines
-from PIL import Image, ImageFile
+from PIL import Image, ImageFile, ImageDraw
 import random
 import numpy as np
 from typing import Dict, Optional, Tuple
@@ -31,6 +31,12 @@ class OCRDataset(Dataset):
                            grayscale: Optional[bool] = True) -> np.ndarray:
         img = Image.open(img_path)
 
+        """draw = ImageDraw.Draw(img)
+        print(crop)
+        print(img_path)
+        draw.rectangle((crop['x'], crop['y'], crop['x'] + crop['width'], crop['y'] + crop['height']), outline='red')
+        img.save("../../test.png")"""
+
         if grayscale:
             img = img.convert('L')
             channel = 1
@@ -45,7 +51,7 @@ class OCRDataset(Dataset):
             if resize[0] == -1:
                 aspect_ratio = img.size[0]/img.size[1]
                 resize[0] = int(aspect_ratio * resize[1])
-                resize[0] = (min(resize[0], 500)%4 + 1)*4
+                resize[0] = (min(resize[0], 500)//4 + 1)*4
             img = img.resize(resize, Image.BICUBIC)
 
         if is_train:
