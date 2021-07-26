@@ -96,7 +96,6 @@ class OCRDataModule(pl.LightningDataModule):
         else:
             self.tokenizer = tokenizer
         self.datasets_paths = datasets_paths
-        self.num_workers = 8
 
     def collate_fn(self, batch):
         imgs = [el['raw_img'] for el in batch if el is not None]
@@ -122,16 +121,16 @@ class OCRDataModule(pl.LightningDataModule):
             self.test_datasets = [OCRDataset(path, self.hparams, is_train=False) for path in self.datasets_paths['test']]
 
     def train_dataloader(self):
-        return DataLoader(ConcatDataset(self.train_datasets), batch_size=self.hparams.bs, shuffle=True, collate_fn=self.collate_fn, num_workers=self.num_workers)
+        return DataLoader(ConcatDataset(self.train_datasets), batch_size=self.hparams.bs, shuffle=True, collate_fn=self.collate_fn, num_workers=self.hparams.num_workers)
 
     def val_dataloader(self):
-        return DataLoader(ConcatDataset(self.val_datasets), batch_size=self.hparams.bs, collate_fn=self.collate_fn, num_workers=self.num_workers)
+        return DataLoader(ConcatDataset(self.val_datasets), batch_size=self.hparams.bs, collate_fn=self.collate_fn, num_workers=self.hparams.num_workers)
 
     def val_dataloaders(self):
-        return [DataLoader(dataset, batch_size=self.hparams.bs, collate_fn=self.collate_fn, num_workers=self.num_workers) for dataset in self.val_datasets]
+        return [DataLoader(dataset, batch_size=self.hparams.bs, collate_fn=self.collate_fn, num_workers=self.hparams.num_workers) for dataset in self.val_datasets]
 
     def test_dataloader(self):
-        return DataLoader(ConcatDataset(self.test_datasets), batch_size=self.hparams.bs, collate_fn=self.collate_fn, num_workers=self.num_workers)
+        return DataLoader(ConcatDataset(self.test_datasets), batch_size=self.hparams.bs, collate_fn=self.collate_fn, num_workers=self.hparams.num_workers)
 
     def test_dataloaders(self):
-        return [DataLoader(dataset, batch_size=self.hparams.bs, collate_fn=self.collate_fn, num_workers=self.num_workers) for dataset in self.test_datasets]
+        return [DataLoader(dataset, batch_size=self.hparams.bs, collate_fn=self.collate_fn, num_workers=self.hparams.num_workers) for dataset in self.test_datasets]

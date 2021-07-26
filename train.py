@@ -22,8 +22,9 @@ if __name__ == '__main__':
     parser.add_argument('--augmentation', type=str, default= 'none', help="none, simple or funsd")
     
     parser.add_argument('--bs', type=int, help="mini-batch size", default=32)
-    parser.add_argument('--gpus', type=int, default=1)
+    parser.add_argument('--gpus', type=int, default=-1)
     parser.add_argument('--epochs', type=int, default=4)
+    parser.add_argument('--num_workers', type=int, default=32)
     parser.add_argument('--height', type=int, default=32, help="Height to which the image are resized. Ignored if [--resize] is not used.")
     parser.add_argument('--width', type=int, default=100, help="Width to which the image are resized. Ignored if [--resize] is not used.")
 
@@ -80,7 +81,7 @@ if __name__ == '__main__':
 
     trainer = pl.Trainer(gpus=args.gpus,
                          accelerator='ddp',
-                         plugins=[DDPPlugin(find_unused_parameters=False)],
+                         plugins=[DDPPlugin(find_unused_parameters=False), 'ddp_sharded'],
                          checkpoint_callback=args.save_best_model,
                          callbacks=callbacks,
                          gradient_clip_val=2.,
