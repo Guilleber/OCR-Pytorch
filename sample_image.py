@@ -10,10 +10,11 @@ from parameters import datasets
 
 hparams = {'grayscale': True,
            'resize': True,
+           'augmentation': 'funsd',
            'width': -1,
            'height': 32}
 
-dataset = OCRDataset(datasets[sys.argv[1]][sys.argv[2]][0], Namespace(**hparams), is_train=False)
+dataset = OCRDataset(datasets[sys.argv[1]][sys.argv[2]][0], Namespace(**hparams), is_train=True)
 
 sample = dataset[random.randint(0, len(dataset)-1)]
 print(sample['raw_label'])

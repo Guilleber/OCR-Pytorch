@@ -112,7 +112,7 @@ class OCRDataModule(pl.LightningDataModule):
 
     def setup(self, stage=None):
         if stage in (None, 'fit'):
-            self.train_datasets = [OCRDataset(path, self.hparams, is_train=self.hparams.augmentation) for path in self.datasets_paths['train']]
+            self.train_datasets = [OCRDataset(path, self.hparams, is_train=True) for path in self.datasets_paths['train']]
             self.val_datasets = [OCRDataset(path, self.hparams, is_train=False) for path in self.datasets_paths['val']]
 
         if stage == 'validate':

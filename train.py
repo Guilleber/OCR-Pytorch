@@ -19,6 +19,7 @@ if __name__ == '__main__':
     parser.add_argument('--exp_name', type=str, default='exp')
     parser.add_argument('--load_weights_from', type=str, default=None)
     parser.add_argument('--resume_from', type=str, default=None)
+    parser.add_argument('--augmentation', type=str, default= 'none', help="none, simple or funsd")
     
     parser.add_argument('--bs', type=int, help="mini-batch size", default=32)
     parser.add_argument('--gpus', type=int, default=1)
@@ -34,7 +35,6 @@ if __name__ == '__main__':
     parser.add_argument('--run_test', action='store_true')
     parser.add_argument('--run_val', action='store_true')
     parser.add_argument('--case_sensitive', action='store_true')
-    parser.add_argument('--augmentation', action='store_true')
 
     args = parser.parse_args()
 
