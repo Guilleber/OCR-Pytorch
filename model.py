@@ -191,9 +191,9 @@ class SATRNModel(pl.LightningModule):
 
             out_dict = {}
             for metric_name, metric in self.metrics.items():
-                out_dict[metric_name] = sum([metric(pred_words[i], tgt_words[i]) for i in range(len(tgt_words))])
+                out_dict[metric_name] = sum([metric(pred_words[i], tgt_words[i]) for i in range(len(tgt_words)) if len(tgt_words[i]) != 0])
 
-            out_dict['nb_ex'] = len(tgt_words)
+            out_dict['nb_ex'] = len([words for words in tgt_words if len(words) != 0])
 
         return out_dict
 
@@ -220,9 +220,9 @@ class SATRNModel(pl.LightningModule):
 
             out_dict = {}
             for metric_name, metric in self.metrics.items():
-                out_dict[metric_name] = sum([metric(pred_words[i], tgt_words[i]) for i in range(len(tgt_words))])
+                out_dict[metric_name] = sum([metric(pred_words[i], tgt_words[i]) for i in range(len(tgt_words)) if len(tgt_words[i]) != 0])
 
-            out_dict['nb_ex'] = len(tgt_words)
+            out_dict['nb_ex'] = len([words for words in tgt_words if len(words) != 0])
 
         return out_dict
 

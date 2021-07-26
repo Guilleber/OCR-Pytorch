@@ -29,7 +29,7 @@ class Tokenizer:
         return self.detokenize(tokens)
 
     def tokens2ids(self, tokens: Iterable[Iterable[str]]) -> List[List[int]]:
-        return [[self.token_to_idx[token] for token in seq if token in self.token_to_idx] for seq in tokens]
+        return [[self.token_to_idx[token] if token in self.token_to_idx else self.unk_token_idx for token in seq] for seq in tokens]
 
     def pad(self, ids: Iterable[Iterable[int]]) -> Tuple[np.ndarray, np.ndarray]:
         max_len = max([len(seq) for seq in ids])
@@ -52,10 +52,11 @@ class Tokenizer:
 class CharTokenizer(Tokenizer):
     def __init__(self, case_sensitive: Optional[bool] = False):
         self.case_sensitive = case_sensitive
-        self.vocab = ["GO", "END"] + list(open("./ressources/charset.txt" if self.case_sensitive else "./ressources/charset_cap_only.txt", 'r').read())
+        self.vocab = ["GO", "END", "UNK"] + list(open("./ressources/charset.txt" if self.case_sensitive else "./ressources/charset_cap_only.txt", 'r').read())
         self.token_to_idx = {token: i for i, token in enumerate(self.vocab)}
         self.go_token_idx = self.token_to_idx["GO"]
         self.end_token_idx = self.token_to_idx["END"]
+        self.unk_token_idx = self.token_to_idx["UNK"]
         self.vocab_size = len(self.vocab)
 
     def tokenize(self, sentences: Iterable[str]) -> List[List[str]]:
