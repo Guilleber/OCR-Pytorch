@@ -8,7 +8,7 @@ import random
 import numpy as np
 from typing import Dict, Optional, Tuple
 
-ImageFile.LOAD_TRUNCATED_IMAGES = True
+ImageFile.LOAD_TRUNCATED_IMAGES = False
 
 
 class OCRDataset(Dataset):
@@ -54,25 +54,21 @@ class OCRDataset(Dataset):
                 img = img.rotate(angle)
             elif augmentation == 'funsd':
                 #rotations
-                angle=random.randint(-10, 10)
+                angle=random.randint(-5, 5)
                 img = img.rotate(angle, resample=Image.BILINEAR, expand=True, fillcolor='white')
 
                 #distortions + white borders
                 w, h = img.size
-                new_w, new_h = random.randint(w, w+30), random.randint(h, int(1.5*h))
+                new_w, new_h = random.randint(w, w+30), random.randint(h, int(1.2*h))
                 new_img = Image.new('L' if grayscale else 'RGB', (new_w, new_h), color='white')
                 new_img.paste(img, (random.randint(0, new_w-w), random.randint(0, new_h-h)))
                 img = new_img
-
-                #gaussian blur
-                if random.random() > 0.5:
-                    img = img.filter(ImageFilter.GaussianBlur(radius=1))
 
         if resize is not None:
             if resize[0] == -1:
                 aspect_ratio = img.size[0]/img.size[1]
                 resize[0] = int(aspect_ratio * resize[1])
-                resize[0] = (min(resize[0], 500)//4 + 1)*4
+                resize[0] = (min(resize[0], 200)//4 + 1)*4
             img = img.resize(resize, Image.BICUBIC)
 
         w, h = img.size

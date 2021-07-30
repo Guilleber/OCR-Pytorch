@@ -22,7 +22,7 @@ datasets = {'synthtext+mjsynth': {'train': ['/srv/storage/synalp@talc-data2.nanc
                 'test': ['/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/iam/test.jsonl']
             },
             'funsd': {
-                'train': ['/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/docbank/train.jsonl'],
+                'train': ['/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/docbank/train_small.jsonl'],
                 'val': ['/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/funsd/train.jsonl'],
                 'test': ['/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/funsd/test.jsonl']
             }}
