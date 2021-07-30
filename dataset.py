@@ -14,16 +14,24 @@ ImageFile.LOAD_TRUNCATED_IMAGES = False
 class OCRDataset(Dataset):
     def __init__(self, path: str, hparams: Dict, is_train: Optional[bool] = True):
         super().__init__()
-        if path[0] == '!':
-            self.length, path = path[1:].split(':')
-            self.length = int(self.length)
-        else:
-            self.length = None
+
+        path = path.split(':')
+        self.length = None
+        self.nb_repeat = 1
+        for opt in path[:-1]:
+            if opt[0] == '*':
+                self.nb_repeat = int(opt[1:])
+            elif opt[0] == '!':
+                self.length = int(opt[1:])
+        path = path[-1]
+
         self.hparams = hparams
         self.resize = [self.hparams.width, self.hparams.height] if self.hparams.resize else None
         self.data = list(jsonlines.open(path, 'r'))
         self.folder_path = '/'.join(path.split('/')[:-1]) + '/'
         self.is_train = is_train
+
+        self.length = len(self.data) if self.length is None else self.length
 
     @staticmethod
     def load_and_transform(img_path: str, crop: Optional[Dict] = None,
@@ -78,10 +86,11 @@ class OCRDataset(Dataset):
         return img
 
     def __len__(self):
-        return len(self.data) if self.length is None else self.length
+        return self.length*self.nb_repeat
 
     def __getitem__(self, index: int) -> Dict:
         try:
+            index = index%self.length
             raw_img = OCRDataset.load_and_transform(self.folder_path + self.data[index]['img'],
                                                     crop=self.data[index]['box'],
                                                     resize=self.resize,
