@@ -90,17 +90,30 @@ class OCRDataset(Dataset):
 
     def __getitem__(self, index: int) -> Dict:
         try:
-            index = index%self.length
-            raw_img = OCRDataset.load_and_transform(self.folder_path + self.data[index]['img'],
+            try:
+                index = index%self.length
+                raw_img = OCRDataset.load_and_transform(self.folder_path + self.data[index]['img'],
                                                     crop=self.data[index]['box'],
                                                     resize=self.resize,
                                                     is_train=self.is_train,
                                                     grayscale=self.hparams.grayscale,
                                                     augmentation = self.hparams.augmentation)
-            raw_label = self.data[index]['tag']
-            if len(raw_label) == 0:
-                raw_label = '*'
-            return {'raw_img': raw_img, 'raw_label': raw_label}
+                raw_label = self.data[index]['tag']
+                if len(raw_label) == 0:
+                    raw_label = '*'
+                return {'raw_img': raw_img, 'raw_label': raw_label}
+            except:
+                index = random.randint(0, self.length-1)
+                raw_img = OCRDataset.load_and_transform(self.folder_path + self.data[index]['img'],
+                                                    crop=self.data[index]['box'],
+                                                    resize=self.resize,
+                                                    is_train=self.is_train,
+                                                    grayscale=self.hparams.grayscale,
+                                                    augmentation = self.hparams.augmentation)
+                raw_label = self.data[index]['tag']
+                if len(raw_label) == 0:
+                    raw_label = '*'
+                return {'raw_img': raw_img, 'raw_label': raw_label}
         except Exception as e:
             # If anything happens during loading the example is set to 'None' and will be eliminated by the 'collate_fn'
             # function in datamodule.py

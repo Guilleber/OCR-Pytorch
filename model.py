@@ -8,6 +8,7 @@ import pytorch_lightning as pl
 from modules.PositionalEncoding import PositionalEncoding, PositionalEncoding2d, A2DPE, ExperimentalPositionalEncoding
 from modules.TransformerEncoderLayer2d import TransformerEncoderLayer2d
 from modules.Transformer import TransformerDecoder, TransformerDecoderLayer
+from modules.ResNet import ResNet
 from metrics import exact_match, char_error_rate, word_error_rate
 
 from argparse import Namespace
@@ -24,12 +25,15 @@ class SATRNModel(pl.LightningModule):
         self.metrics = {'acc': exact_match, 'cer': char_error_rate, 'wer': word_error_rate}
 
         #Shallow CNN
-        self.shallow_conv = nn.Sequential(nn.Conv2d(1 if self.hparams.grayscale else 3, self.hparams.d_model, 3, padding=1),
-                                          nn.MaxPool2d(kernel_size=2, stride=2),
-                                          nn.ReLU(),
-                                          nn.Dropout(self.hparams.dropout),
-                                          nn.Conv2d(self.hparams.d_model, self.hparams.d_model, 3, padding=1),
-                                          nn.MaxPool2d(kernel_size=2, stride=2))
+        if self.hparams.backbone == 'simple':
+            self.shallow_conv = nn.Sequential(nn.Conv2d(1 if self.hparams.grayscale else 3, self.hparams.d_model, 3, padding=1),
+                                            nn.MaxPool2d(kernel_size=2, stride=2),
+                                            nn.ReLU(),
+                                            nn.Dropout(self.hparams.dropout),
+                                            nn.Conv2d(self.hparams.d_model, self.hparams.d_model, 3, padding=1),
+                                            nn.MaxPool2d(kernel_size=2, stride=2))
+        elif self.hparams.backbone == 'resnet':
+            self.shallow_conv = ResNet(1 if self.hparams.grayscale else 3, self.hparams.d_model, dropout=self.hparams.dropout)
 
         #Encoder
         if 'positional_enc' not in self.hparams or self.hparams.positional_enc == 'simple':
