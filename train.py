@@ -86,6 +86,8 @@ if __name__ == '__main__':
                          callbacks=callbacks,
                          gradient_clip_val=2.,
                          resume_from_checkpoint=args.resume_from,
+                         precision=16,
+                         profiler='simple',
                          max_epochs=args.epochs)
 
     if args.run_test:

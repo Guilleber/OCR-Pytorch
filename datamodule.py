@@ -121,7 +121,7 @@ class OCRDataModule(pl.LightningDataModule):
             self.test_datasets = [OCRDataset(path, self.hparams, is_train=False) for path in self.datasets_paths['test']]
 
     def train_dataloader(self):
-        return DataLoader(ConcatDataset(self.train_datasets), batch_size=self.hparams.bs, shuffle=True, collate_fn=self.collate_fn, num_workers=self.hparams.num_workers)
+        return DataLoader(ConcatDataset(self.train_datasets), batch_size=self.hparams.bs, shuffle=True, collate_fn=self.collate_fn, num_workers=self.hparams.num_workers, pin_memory=True)
 
     def val_dataloader(self):
         return DataLoader(ConcatDataset(self.val_datasets), batch_size=self.hparams.bs, collate_fn=self.collate_fn, num_workers=self.hparams.num_workers)

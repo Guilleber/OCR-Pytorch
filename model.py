@@ -167,21 +167,8 @@ class SATRNModel(pl.LightningModule):
 
         loss = F.cross_entropy(logits, tgt)
 
-        pred = logits.argmax(dim=1)
-        acc = torch.sum(pred == tgt)
-        nb_ex = tgt.size(0)
-
         self.log('loss', loss, on_step=True, on_epoch=True, prog_bar=False, logger=True, sync_dist=True)
-        return {'loss': loss, 'acc': acc, 'nb_ex': nb_ex}
-
-    def training_epoch_end(self, outputs):
-        acc = sum([out['acc'] for out in outputs])
-        nb_ex = sum([out['nb_ex'] for out in outputs])
-        acc = acc/nb_ex
-        self.log('acc', acc, sync_dist=True)
-
-        print("epoch end time = {}".format(datetime.now().strftime("%d/%m/%Y %H:%M")), file=sys.stderr)
-        return
+        return loss
 
     def validation_step(self, batch, batch_idx):
         with torch.no_grad():

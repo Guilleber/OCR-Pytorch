@@ -117,5 +117,5 @@ class OCRDataset(Dataset):
         except Exception as e:
             # If anything happens during loading the example is set to 'None' and will be eliminated by the 'collate_fn'
             # function in datamodule.py
-            print(e, file=sys.stderr)
+            print(e, file=sys.stderr, flush=True)
             return None
