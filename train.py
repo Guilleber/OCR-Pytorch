@@ -59,7 +59,7 @@ if __name__ == '__main__':
         model = SATRNModel.load_from_checkpoint(args.load_weights_from, tokenizer=tokenizer)
 
     # reproducibility
-    pl.seed_everything(42)
+    pl.seed_everything(43)
 
     # saves best model
     callbacks = []

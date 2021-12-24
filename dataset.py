@@ -58,7 +58,7 @@ class OCRDataset(Dataset):
         if is_train and augmentation != 'none':
             if augmentation == 'simple':
                 # Data augmentation -> applies random rotation to the image
-                angle = random.randint(-34, 34)
+                angle = random.randint(-30, 30)
                 img = img.rotate(angle)
             elif augmentation == 'funsd':
                 #rotations

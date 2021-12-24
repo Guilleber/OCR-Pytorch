@@ -1,2 +1,2 @@
-python3 train.py --model_type satrn-large --datasets funsd --resize --gpus 0 --bs 16 --epochs 4 --save_best_model --lr 1e-5 --exp_name experimental
+/usr/bin/python3 train.py --model_type satrn-large-resnet --datasets full_words --resize --width -1 --gpus 1 --bs 16 --epochs 4 --lr 5e-6 --exp_name hc_full --num_workers 4 --load_weights_from ./saved_models/hc_full.ckpt --run_val
 #python3 train.py --model_type satrn-large --datasets synthtext+mjsynth --resize --grayscale --gpus 0 --bs 16 --epochs 1 --load_weights_from './saved_models/exp-epoch=00-val_acc=0.98.ckpt' --run_test
