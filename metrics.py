@@ -1,10 +1,13 @@
 from typing import List, Iterable, Any
 from nltk.tokenize import word_tokenize
+import re
 
 
 def exact_match(prediction: str, target: str) -> float:
     return 1.0 if prediction == target else 0.0
 
+def exact_match_alphanum(prediction: str, target: str) -> float:
+    return 1.0 if re.sub('[^A-Za-z0-9]+', '', prediction) == re.sub('[^A-Za-z0-9]+', '', target) else 0.0
 
 def levenshtein(s1: Iterable[Any], s2: Iterable[Any]) -> int:
     dist = [[0 for _ in range(len(s1) + 1)] for _ in range(len(s2) + 1)]
