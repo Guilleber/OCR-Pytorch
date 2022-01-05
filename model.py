@@ -9,7 +9,7 @@ from modules.PositionalEncoding import PositionalEncoding, PositionalEncoding2d,
 from modules.TransformerEncoderLayer2d import TransformerEncoderLayer2d
 from modules.Transformer import TransformerDecoder, TransformerDecoderLayer
 from modules.ResNet import ResNet
-from metrics import exact_match, exact_match_alphanum, char_error_rate, word_error_rate
+from metrics import exact_match, exact_match_alphanum, exact_match_alpha, char_error_rate, word_error_rate
 
 from argparse import Namespace
 from datetime import datetime
@@ -22,7 +22,7 @@ class SATRNModel(pl.LightningModule):
         self.save_hyperparameters(hparams)
         self.tokenizer = tokenizer
 
-        self.metrics = {'acc': exact_match, 'acc_alnum': exact_match_alphanum, 'cer': char_error_rate, 'wer': word_error_rate}
+        self.metrics = {'acc': exact_match, 'acc_alnum': exact_match_alphanum, 'acc_alpha': exact_match_alpha, 'cer': char_error_rate, 'wer': word_error_rate}
 
         #Shallow CNN
         if self.hparams.backbone == 'simple':
