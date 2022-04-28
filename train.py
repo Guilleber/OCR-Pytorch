@@ -75,7 +75,7 @@ if __name__ == '__main__':
     # early stopping
     early_stopping_callback = pl.callbacks.EarlyStopping(monitor='val_cer',
                                                min_delta=0.0,
-                                               patience=2,
+                                               patience=4,
                                                mode='min')
     callbacks.append(early_stopping_callback)
 

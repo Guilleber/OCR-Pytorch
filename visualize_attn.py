@@ -47,6 +47,7 @@ if __name__ == '__main__':
 
     image = Image.fromarray(image.squeeze(), mode='L') if args.grayscale else Image.fromarray(image, mode='RGB')
     image = image.convert('RGBA')
+    image.save('./imgs/attn_heatmaps/original.png')
 
     for layer in range(len(attn_weights)):
         for token in range(len(attn_weights[layer][0])):
