@@ -6,14 +6,18 @@ import jsonlines
 from PIL import Image, ImageFile, ImageDraw, ImageFilter
 import random
 import numpy as np
+import math
 from typing import Dict, Optional, Tuple
 
 ImageFile.LOAD_TRUNCATED_IMAGES = False
+LIMITS = [2, 4, 6, 8, 10]
 
 
 class OCRDataset(Dataset):
     def __init__(self, path: str, hparams: Dict, is_train: Optional[bool] = True):
         super().__init__()
+
+        self.length_limit = hparams.length_limit
 
         path = path.split(':')
         self.length = None
@@ -32,6 +36,12 @@ class OCRDataset(Dataset):
         self.is_train = is_train
 
         self.length = len(self.data) if self.length is None else self.length
+        self.input_map = []
+        for i, item in enumerate(self.data[:self.length]):
+            if len(item['tag']) <= self.length_limit:
+                self.input_map.append(i)
+        self.length = len(self.input_map)
+
 
     @staticmethod
     def load_and_transform(img_path: str, crop: Optional[Dict] = None,
@@ -58,11 +68,11 @@ class OCRDataset(Dataset):
         if is_train and augmentation != 'none':
             if augmentation == 'simple':
                 # Data augmentation -> applies random rotation to the image
-                angle = random.randint(-30, 30)
-                img = img.rotate(angle)
+                angle = random.randint(-10, 10)
+                img = img.rotate(angle, resample=Image.BILINEAR, expand=True, fillcolor='white')
             elif augmentation == 'funsd':
                 #rotations
-                angle=random.randint(-5, 5)
+                angle = random.randint(-10, 10)
                 img = img.rotate(angle, resample=Image.BILINEAR, expand=True, fillcolor='white')
 
                 #distortions + white borders
@@ -92,6 +102,7 @@ class OCRDataset(Dataset):
         try:
             try:
                 index = index%self.length
+                index = self.input_map[index]
                 raw_img = OCRDataset.load_and_transform(self.folder_path + self.data[index]['img'],
                                                     crop=self.data[index]['box'],
                                                     resize=self.resize,
@@ -104,6 +115,7 @@ class OCRDataset(Dataset):
                 return {'raw_img': raw_img, 'raw_label': raw_label}
             except:
                 index = random.randint(0, self.length-1)
+                index = self.input_map[index]
                 raw_img = OCRDataset.load_and_transform(self.folder_path + self.data[index]['img'],
                                                     crop=self.data[index]['box'],
                                                     resize=self.resize,

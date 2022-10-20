@@ -4,6 +4,7 @@ from pytorch_lightning.plugins import DDPPlugin
 import torch
 
 import argparse
+import math
 from datetime import datetime
 import sys
 
@@ -25,6 +26,7 @@ if __name__ == '__main__':
     parser.add_argument('--gpus', type=int, default=-1)
     parser.add_argument('--epochs', type=int, default=4)
     parser.add_argument('--num_workers', type=int, default=1)
+    parser.add_argument('--length_limit', type=int, default=math.inf)
     parser.add_argument('--height', type=int, default=32, help="Height to which the image are resized. Ignored if [--resize] is not used.")
     parser.add_argument('--width', type=int, default=100, help="Width to which the image are resized. Ignored if [--resize] is not used.")
 
@@ -66,7 +68,7 @@ if __name__ == '__main__':
     if args.save_best_model:
         checkpoint_callback = pl.callbacks.ModelCheckpoint(monitor='val_cer',
                                              dirpath='./saved_models/',
-                                             filename=args.exp_name + '-{epoch:02d}-{val_cer:2.2f}',
+                                             filename=args.exp_name,
                                              save_top_k=1,
                                              verbose=True,
                                              mode='min')
