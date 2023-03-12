@@ -29,11 +29,11 @@ datasets = {'synthtext+mjsynth': {'train': ['!1000000:/srv/storage/synalp@talc-d
                          '/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/docbank/test.jsonl']
             },
             'full_words': {
-                'train': ['!2000000:/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/docbank/train_small.jsonl',
-                    #'*25:/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/synthetic_t/train.jsonl',
+                'train': ['!1000000:/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/docbank/train_small.jsonl',
+                    '*5:/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/synthetic_t/train.jsonl',
                     '!1000000:/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/mjsynth/train.jsonl',
                     '!1000000:/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/synthtext/all.jsonl',
-                    #'*25:/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/synthetic_m/train.jsonl',
+                    '*5:/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/synthetic_m/train.jsonl',
                     '*20:/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/iam/train_words.jsonl'],
                 'val': ['/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/iam/val_words.jsonl',
                     '/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/funsd/train_words.jsonl',
@@ -45,7 +45,7 @@ datasets = {'synthtext+mjsynth': {'train': ['!1000000:/srv/storage/synalp@talc-d
                 'test': ['/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/iam/test_words.jsonl',
                     '/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/funsd/test_words.jsonl',
                     '/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/docbank/test.jsonl',
-                    '/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/svt/train.jsonl',
+                    '/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/svt/test.jsonl',
                     '/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/IIIT5K/test.jsonl',
                     '/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/ICDAR13/test.jsonl',
                     '/srv/storage/synalp@talc-data2.nancy.grid5000.fr/gleberre/datasets/ocr/ICDAR15/test.jsonl']
